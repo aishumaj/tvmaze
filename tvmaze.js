@@ -14,19 +14,23 @@ const MISSING_IMAGE = "https://tinyurl.com/tv-missing";
  *    (if no image URL given by API, put in a default image URL)
  */
 async function getShowsByTerm(term) {
-  const searchResponse = await axios.get(`${API_BASE_URL}/search/shows`, { params: { q: term } });
+  const searchResponse = await axios.get(`${API_BASE_URL}/search/shows`,
+  { params: { q: term } });
 
-  let listOfShows = searchResponse.data.map(function(elem){
+  let listOfShows = searchResponse.data.map(function (elem) {
     let image = '';
     if (elem.show.image === null) {
       image = MISSING_IMAGE;
     } else {
       image = elem.show.image.medium;
     }
-   return {id: elem.show.id, name: elem.show.name, summary: elem.show.summary, image};
+    return { id: elem.show.id,
+      name: elem.show.name,
+      summary: elem.show.summary,
+      image };
   });
   return listOfShows;
-  }
+}
 
 
 /** Given list of shows, create markup for each and to DOM */
@@ -79,22 +83,40 @@ $searchForm.on("submit", async function (evt) {
  */
 async function getEpisodesOfShow(id) {
   const episodeListResponse = await axios.get(`${API_BASE_URL}/shows/${id}/episodes`);
-  let episodeList = episodeListResponse.data.map(function(elem){
-    return {id: elem.id, name: elem.name, season: elem.season,
-      number: elem.number}
-  })
+  let episodeList = episodeListResponse.data.map(function (elem) {
+    return {
+      id: elem.id,
+      name: elem.name,
+      season: elem.season,
+      number: elem.number
+    };
+  });
   console.log(episodeList);
   return episodeList;
 }
 
+/** Takes an array of episode information and creates a list of episodes
+ * underneath show information.
+*/
+function populateEpisodes(episodes) {
+  $("#episodesList").empty();
+  for (let ep of episodes) {
+    const $ep = $(
+      `<li>${ep.name} (season ${ep.season}, episode ${ep.number})</li>`
+    );
+    $("#episodesList").append($ep);
+  }
+  $("#episodesArea").show();
+}
 
-/** TODO: Write a clear docstring for this function... */
 
-// TODO: function populateEpisodes(episodes) { })
-
-/**TODO: write docstring */
-$("#showsList").on("click", ".Show-getEpisodes",async function(evt){
-  console.log("This clicked!");
+/**Pulls the show ID from parent div of episode button clicked, unhides episode
+ * display section, and invokes populateEpisode function.
+ */
+async function fillEpisodeListAndDisplay(evt) {
   let id = $(evt.target).closest(".Show").data("show-id");
-  await getEpisodesOfShow(id);
-});
+  const episodes = await getEpisodesOfShow(id);
+  populateEpisodes(episodes);
+}
+
+$("#showsList").on("click", ".Show-getEpisodes", fillEpisodeListAndDisplay);
